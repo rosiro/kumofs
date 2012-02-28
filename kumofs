@@ -9,7 +9,7 @@
 . /etc/rc.d/init.d/functions
 
 RETVAL=0
-
+DBFILE= /var/kumofs/db.tch
 OPTIONS="-o $logfile -d $pidfile -l $MANAGER1"
 if [ -f /etc/sysconfig/kumofs ]; then
         . /etc/sysconfig/kumofs
@@ -29,7 +29,7 @@ start(){
 
         # run servers
         /usr/local/bin/kumo-server  -v -m localhost -l localhost:19801 -L 19901 \
-                     -s /var/kumofs/logmori.tch \
+                     -s $DBFILE \
                      -d /var/kumofs/server1.pid \
                      -o /var/log/kumofs/server1.log
 
