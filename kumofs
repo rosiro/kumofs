@@ -1,0 +1,71 @@
+#!/bin/sh
+# kumo-manager Startup script for the kumo-manager server
+#
+# chkconfig: - 70 30
+# description: kumofs is a node that manages kumo-server group
+# processname: kumofsr
+# pidfile: /var/run/kumofs.pid
+
+. /etc/rc.d/init.d/functions
+
+RETVAL=0
+
+OPTIONS="-o $logfile -d $pidfile -l $MANAGER1"
+if [ -f /etc/sysconfig/kumofs ]; then
+        . /etc/sysconfig/kumofs
+fi
+
+start(){
+        if [ ! -d /var/kumofs ]; then
+            mkdir /var/kumofs
+        fi
+        if [ ! -d /var/log/kumofs ]; then
+            mkdir /var/log/kumofs
+        fi
+
+        # run manager
+        /usr/local/bin/kumo-manager -v -l localhost -d /var/kumofs/manager.pid \
+                     -o /var/log/kumofs/manager.log
+
+        # run servers
+        /usr/local/bin/kumo-server  -v -m localhost -l localhost:19801 -L 19901 \
+                     -s /var/kumofs/logmori.tch \
+                     -d /var/kumofs/server1.pid \
+                     -o /var/log/kumofs/server1.log
+
+　　　　# wait
+        sleep 3
+
+        # run gateway(enabled flags)
+        /usr/local/bin/kumo-gateway -v -m localhost -t 11211 -d /var/kumofs/gateway.pid \
+                     -o /var/log/kumofs/gateway.log -F
+
+        # attach servers
+        /usr/local/bin/kumoctl localhost attach
+
+        echo "running kumofs"
+}
+stop(){
+        kill `cat /var/kumofs/gateway.pid`
+        kill `cat /var/kumofs/server1.pid`
+        kill `cat /var/kumofs/manager.pid`
+
+        rm -f /var/kumofs/gateway.pid
+        rm -f /var/kumofs/server1.pid
+        rm -f /var/kumofs/manager.pid
+
+        echo "stopped kumofs"
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    *)
+        echo "Usage: $0 {start|stop}"
+        exit 1
+esac
+exit $RETVAL
